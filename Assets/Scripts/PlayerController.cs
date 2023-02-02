@@ -4,23 +4,30 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed = 10f;
-    public float sprintMultiplier = 2f;
-    public float jumpForce = 10f;
-    public float mouseSensitivity = 100f;
+    //Settings you can change in the inspector
+    [SerializeField] private float _speed = 800f;
+    [SerializeField] private float _sprintMultiplier = 1.5f;
+    [SerializeField] private float _jumpForce = 10f;
+    [SerializeField] private float _mouseSensitivity = 1000f;
+    [SerializeField] private float _groundCheckRadius = 1.0f;
+    [SerializeField] private LayerMask _groundLayer;
+    [SerializeField] private Transform _cameraTransform;
+    [SerializeField] private BulletShooter _bulletShooter;
+    [SerializeField] private Animator _gunAnimator;
 
-    private Rigidbody rigidbody;
-    private bool isSprinting;
-    private bool isGrounded;
-    public float groundCheckRadius = 1.0f;
-    public LayerMask groundLayer;
+    private Rigidbody _playerRigidbody;
+    private bool _isSprinting;
+    private bool _isJumping;
+    private bool _isGrounded;
+    private bool _isShooting;
+    private bool _isDashing;
+
+
 
     PlayerInput _input;
     private float _yaw;
 
-    float xRotation = 0f;
-
-    public Transform cameraTransform;
+    float _xRotation = 0f;
 
     bool _delay;
 
@@ -31,30 +38,48 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        rigidbody = GetComponent<Rigidbody>();
+        _playerRigidbody = GetComponent<Rigidbody>();
     }
 
     void Update()
     {
-        bool jump = _input.Player.Jump.ReadValue<float>() > 0.1f;
-        isSprinting = _input.Player.Sprint.ReadValue<float>() > 0.1f;;
+        _isJumping = _input.Player.Jump.ReadValue<float>() > 0.1f;
+        _isSprinting = _input.Player.Sprint.ReadValue<float>() > 0.1f;;
+        _isShooting = _input.Player.Fire.ReadValue<float>() > 0.1f;;
+        _isDashing = _input.Player.Dash.ReadValue<float>() > 0.1f;;
 
-        isGrounded = Physics.SphereCast(transform.position, groundCheckRadius, -Vector3.up, out RaycastHit hitInfo, 0.1f, groundLayer);
+        _isGrounded = Physics.SphereCast(transform.position, _groundCheckRadius, -Vector3.up, out RaycastHit hitInfo, 0.1f, _groundLayer);
 
-        if(jump && !_delay && isGrounded)
+        if(_isJumping && !_delay && _isGrounded)
         {
-            StartCoroutine(InputDelay());
+            StartCoroutine(InputDelay(0.15f));
             _delay = true;
-            rigidbody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            StartCoroutine(Jump());
         }
 
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        if (_isShooting && !_delay)
+        {
+            //StartCoroutine(InputDelay(0.1f));
+            //_delay = true;
+            _gunAnimator.Play("Shoot");
+            _bulletShooter.ShootBullet();
+        }
+        else if(_isShooting)
+        {
+            _gunAnimator.Play("Shoot");
+        }
+        else
+        {
+            _gunAnimator.Play("Idle");
+        }
 
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        float mouseX = Input.GetAxis("Mouse X") * _mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * _mouseSensitivity * Time.deltaTime;
 
-        cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        _xRotation -= mouseY;
+        _xRotation = Mathf.Clamp(_xRotation, -90f, 90f);
+
+        _cameraTransform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
     }
 
@@ -67,17 +92,24 @@ public class PlayerController : MonoBehaviour
         movement = transform.TransformDirection(movement);
         movement.y = 0;
 
-        if (isSprinting)
+        if (_isSprinting)
         {
-            movement *= sprintMultiplier;
+            movement *= _sprintMultiplier;
         }
 
-        if (!isGrounded)
+        if (_isDashing && !_delay && movement.magnitude > 0)
+        {
+            StartCoroutine(InputDelay(3.0f));
+            _delay = true;
+            StartCoroutine(Dash(movement));
+        }
+
+        if (!_isGrounded)
         {
             movement.y -= 9.8f * Time.deltaTime;
         }
 
-        rigidbody.velocity = movement * speed * Time.deltaTime;
+        _playerRigidbody.velocity = movement * _speed * Time.deltaTime;
     }
 
     private void OnEnable()
@@ -90,9 +122,27 @@ public class PlayerController : MonoBehaviour
         _input.Disable();
     }
 
-    IEnumerator InputDelay()
+    IEnumerator InputDelay(float seconds)
     {
-        yield return new WaitForSeconds(0.15f);
+        yield return new WaitForSeconds(seconds);
         _delay = false;
+    }
+
+    IEnumerator Dash(Vector3 soTrue)
+    {
+        for(int i = 20; i < 40; i++)
+        {
+            yield return new WaitForSeconds(0.01f);
+            _playerRigidbody.AddForce(soTrue.normalized * i, ForceMode.Impulse);
+        }
+    }
+
+    IEnumerator Jump()
+    {
+        for(int i = 8; i < _jumpForce; i++)
+        {
+            yield return new WaitForSeconds(0.005f);
+            _playerRigidbody.AddForce(Vector3.up * i, ForceMode.Impulse);
+        }
     }
 }
