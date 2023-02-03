@@ -11,7 +11,7 @@ public class BulletShooter : MonoBehaviour
 
     public void ShootBullet()
     {
-        GameObject bullet = Instantiate(_bulletPrefab, _bulletSpawnPoint.position, camera.transform.rotation);
+        GameObject bullet = Instantiate(_bulletPrefab, _bulletSpawnPoint.position, GetComponent<Camera>().transform.rotation);
         Rigidbody bulletRigidbody = bullet.GetComponent<Rigidbody>();
         bulletRigidbody.AddForce(_camera.transform.forward * _bulletForce, ForceMode.Impulse);
     }
