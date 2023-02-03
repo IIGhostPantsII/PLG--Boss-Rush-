@@ -7,29 +7,32 @@ public class PlayerController : MonoBehaviour
     //Settings you can change in the inspector
     [SerializeField] private float _speed = 800f;
     [SerializeField] private float _sprintMultiplier = 1.5f;
-    [SerializeField] private float _jumpForce = 10f;
+    [SerializeField] private float _jumpForce = 15f;
     [SerializeField] private float _mouseSensitivity = 1000f;
     [SerializeField] private float _groundCheckRadius = 1.0f;
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private Transform _cameraTransform;
     [SerializeField] private BulletShooter _bulletShooter;
     [SerializeField] private Animator _gunAnimator;
+    [SerializeField] private SoundManager _soundManager;
 
-    private Rigidbody _playerRigidbody;
+    //INPUT BOOLS
     private bool _isSprinting;
     private bool _isJumping;
     private bool _isGrounded;
     private bool _isShooting;
     private bool _isDashing;
 
-
-
+    //Using Unitys new input system
     PlayerInput _input;
-    private float _yaw;
 
+    private Rigidbody _playerRigidbody;
+
+    //Rotation - used for mouse input
     float _xRotation = 0f;
 
     bool _delay;
+    bool _shootDelay;
 
     private void Awake()
     {
@@ -43,10 +46,11 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        //INPUT VALUES
         _isJumping = _input.Player.Jump.ReadValue<float>() > 0.1f;
-        _isSprinting = _input.Player.Sprint.ReadValue<float>() > 0.1f;;
-        _isShooting = _input.Player.Fire.ReadValue<float>() > 0.1f;;
-        _isDashing = _input.Player.Dash.ReadValue<float>() > 0.1f;;
+        _isSprinting = _input.Player.Sprint.ReadValue<float>() > 0.1f;
+        _isShooting = _input.Player.Fire.ReadValue<float>() > 0.1f;
+        _isDashing = _input.Player.Dash.ReadValue<float>() > 0.1f;
 
         _isGrounded = Physics.SphereCast(transform.position, _groundCheckRadius, -Vector3.up, out RaycastHit hitInfo, 0.1f, _groundLayer);
 
@@ -57,11 +61,12 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(Jump());
         }
 
-        if (_isShooting && !_delay)
+        if(_isShooting && !_shootDelay)
         {
-            //StartCoroutine(InputDelay(0.1f));
-            //_delay = true;
+            StartCoroutine(ShootDelay(0.1f));
+            _shootDelay = true;
             _gunAnimator.Play("Shoot");
+            _soundManager._source.PlayOneShot(_soundManager._clips[0]);
             _bulletShooter.ShootBullet();
         }
         else if(_isShooting)
@@ -92,19 +97,19 @@ public class PlayerController : MonoBehaviour
         movement = transform.TransformDirection(movement);
         movement.y = 0;
 
-        if (_isSprinting)
+        if(_isSprinting)
         {
             movement *= _sprintMultiplier;
         }
 
-        if (_isDashing && !_delay && movement.magnitude > 0)
+        if(_isDashing && !_delay && movement.magnitude > 0)
         {
             StartCoroutine(InputDelay(3.0f));
             _delay = true;
             StartCoroutine(Dash(movement));
         }
 
-        if (!_isGrounded)
+        if(!_isGrounded)
         {
             movement.y -= 9.8f * Time.deltaTime;
         }
@@ -128,6 +133,12 @@ public class PlayerController : MonoBehaviour
         _delay = false;
     }
 
+    IEnumerator ShootDelay(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        _shootDelay = false;
+    }
+
     IEnumerator Dash(Vector3 soTrue)
     {
         for(int i = 20; i < 40; i++)
@@ -139,7 +150,7 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator Jump()
     {
-        for(int i = 8; i < _jumpForce; i++)
+        for(int i = 5; i < _jumpForce; i++)
         {
             yield return new WaitForSeconds(0.005f);
             _playerRigidbody.AddForce(Vector3.up * i, ForceMode.Impulse);

@@ -4,15 +4,15 @@ using UnityEngine;
 
 public class BulletShooter : MonoBehaviour
 {
-    public GameObject bulletPrefab;
-    public Transform bulletSpawnPoint;
-    public float bulletForce = 10f;
-    public Camera camera;
+    public GameObject _bulletPrefab;
+    public Transform _bulletSpawnPoint;
+    public float _bulletForce = 10f;
+    public Camera _camera;
 
     public void ShootBullet()
     {
-        GameObject bullet = Instantiate(bulletPrefab, bulletSpawnPoint.position, camera.transform.rotation);
+        GameObject bullet = Instantiate(_bulletPrefab, _bulletSpawnPoint.position, camera.transform.rotation);
         Rigidbody bulletRigidbody = bullet.GetComponent<Rigidbody>();
-        bulletRigidbody.AddForce(camera.transform.forward * bulletForce, ForceMode.Impulse);
+        bulletRigidbody.AddForce(_camera.transform.forward * _bulletForce, ForceMode.Impulse);
     }
 }
