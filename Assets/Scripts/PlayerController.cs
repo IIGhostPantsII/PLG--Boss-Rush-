@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private bool _isGrounded;
     private bool _isShooting;
     private bool _isDashing;
+    private bool _isReloading;
 
     //Using Unitys new input system
     PlayerInput _input;
@@ -32,7 +33,10 @@ public class PlayerController : MonoBehaviour
     float _xRotation = 0f;
 
     bool _delay;
-    bool _shootDelay;
+    public bool _shootDelay;
+    public bool _reload;
+
+    public int _ammo;
 
     private void Awake()
     {
@@ -51,6 +55,7 @@ public class PlayerController : MonoBehaviour
         _isSprinting = _input.Player.Sprint.ReadValue<float>() > 0.1f;
         _isShooting = _input.Player.Fire.ReadValue<float>() > 0.1f;
         _isDashing = _input.Player.Dash.ReadValue<float>() > 0.1f;
+        _isReloading = _input.Player.Reload.ReadValue<float>() > 0.1f;
 
         _isGrounded = Physics.SphereCast(transform.position, _groundCheckRadius, -Vector3.up, out RaycastHit hitInfo, 0.1f, _groundLayer);
 
@@ -61,15 +66,21 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(Jump());
         }
 
-        if(_isShooting && !_shootDelay)
+        if(_isReloading)
         {
+            _ammo = 0;
+        }
+
+        if(_isShooting && !_shootDelay && !_reload)
+        {
+            _ammo--;
             StartCoroutine(ShootDelay(0.1f));
             _shootDelay = true;
             _gunAnimator.Play("Shoot");
             _soundManager._source.PlayOneShot(_soundManager._clips[0]);
             _bulletShooter.ShootBullet();
         }
-        else if(_isShooting)
+        else if(_isShooting && !_reload)
         {
             _gunAnimator.Play("Shoot");
         }
@@ -133,7 +144,7 @@ public class PlayerController : MonoBehaviour
         _delay = false;
     }
 
-    IEnumerator ShootDelay(float seconds)
+    public IEnumerator ShootDelay(float seconds)
     {
         yield return new WaitForSeconds(seconds);
         _shootDelay = false;
