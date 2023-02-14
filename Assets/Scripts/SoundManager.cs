@@ -5,6 +5,19 @@ public class SoundManager : MonoBehaviour
     public AudioSource _source;
     public AudioClip[] _clips;
     public AudioClip[] _music;
+
+    public static SoundManager _instance;
+
+    void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+        if(_instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+    }
     
     public void PlayMusic(int musicIndex)
     {
