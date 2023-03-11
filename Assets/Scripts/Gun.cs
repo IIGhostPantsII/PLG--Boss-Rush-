@@ -7,7 +7,7 @@ using TMPro;
 public class Gun : MonoBehaviour
 {
     [SerializeField] public PlayerController _pc;
-    [SerializeField] public TMP_Text _ammoText; // The UI text element for the speaker's name
+    [SerializeField] public TMP_Text _ammoText;
 
     bool _hasSMG = true;
     bool _hasLMG;
